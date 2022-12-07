@@ -9,8 +9,9 @@ import { useSelector } from "react-redux";
 //types
 import type { RootState } from "../store";
 import { Todo } from "./../features/todos/todos-slice";
+
 interface ButtonFilter {
-   initialState: Todo[];
+   todos: Todo[];
    selected: "all" | "completed" | "unCompleted";
    setSelected: React.Dispatch<React.SetStateAction<"all" | "completed" | "unCompleted">>;
 }
@@ -23,46 +24,56 @@ const Todos = () => {
    const todos = useSelector((state: RootState) => state.todos.todos);
    const [selected, setSelected] = useState<"all" | "completed" | "unCompleted">("all");
 
-   const [initialState, setInitialState] = useState<Todo[]>([]);
-   const [filterTodos, setFilterTodos] = useState<Todo[]>([]);
-
-   useEffect(() => {
-      setInitialState(todos);
-   }, [todos]);
-
-   useEffect(() => {
-      let result = initialState;
-      result = result.filter((todo) => todo.status === selected);
-
-      if (result.length === 0) {
-         return setFilterTodos(todos);
+   const filterTodosByStatus = todos.filter((todo) => {
+      if (selected === "completed") {
+         return todo.status === "completed";
+      } else if (selected === "unCompleted") {
+         return todo.status === "unCompleted";
+      } else {
+         return todo;
       }
-      setFilterTodos(result);
-   }, [selected, initialState, todos]);
+   });
 
+   const emptyMessage =
+      todos.length === 0 ? (
+         <Box>
+            <Image priority src={gif} alt="gif" />
+         </Box>
+      ) : (
+         ""
+      );
+
+   const emptyFilter =
+      filterTodosByStatus.filter((todo) => todo.status === "completed").length === 0 &&
+      selected === "completed" ? (
+         <Box sx={{ textAlign: "center", paddingTop: "5px" , color:"#555" }}>Empty Completed Todo</Box>
+      ) : filterTodosByStatus.filter((todo) => todo.status === "unCompleted").length === 0 &&
+        selected === "unCompleted" ? (
+         <Box sx={{ textAlign: "center", paddingTop: "5px" , color:"#555" }}>Empty Un-Completed Todo </Box>
+      ) : (
+         ""
+      );
+
+   
    return (
       <>
-         <ButtonsFilter initialState={initialState} selected={selected} setSelected={setSelected} />
-         <Grid container sx={{ justifyContent: `${filterTodos.length === 0 ? "center" : ""}` }}>
-            {filterTodos.length === 0 ? (
-               <Box>
-                  <Image priority src={gif} alt="gif" />
-               </Box>
-            ) : (
-               filterTodos.map((t) => {
-                  return (
-                     <Grid key={t.id} item xs={12} md={6}>
-                        <TodoItem todo={t} />
-                     </Grid>
-                  );
-               })
-            )}
+         <ButtonsFilter todos={todos} selected={selected} setSelected={setSelected} />
+         {emptyFilter}
+         <Grid container sx={{ justifyContent: "center" }}>
+            {emptyMessage}
+            {filterTodosByStatus.map((t) => {
+               return (
+                  <Grid key={t.id} item xs={12} md={6}>
+                     <TodoItem todo={t} />
+                  </Grid>
+               );
+            })}
          </Grid>
       </>
    );
 };
 
-const ButtonsFilter = ({ initialState, selected, setSelected }: ButtonFilter) => {
+const ButtonsFilter = ({ todos, selected, setSelected }: ButtonFilter) => {
    return (
       <Stack
          direction="row"
@@ -73,7 +84,7 @@ const ButtonsFilter = ({ initialState, selected, setSelected }: ButtonFilter) =>
             padding: { xs: "2rem", md: "0" },
          }}
       >
-         <Badge color="secondary" badgeContent={initialState.length}>
+         <Badge color="secondary" badgeContent={todos.length}>
             <Button
                variant="outlined"
                sx={{
@@ -91,7 +102,7 @@ const ButtonsFilter = ({ initialState, selected, setSelected }: ButtonFilter) =>
 
          <Badge
             color="secondary"
-            badgeContent={initialState.filter((todo) => todo.status === "completed").length}
+            badgeContent={todos.filter((todo) => todo.status === "completed").length}
          >
             <Button
                variant="outlined"
@@ -110,7 +121,7 @@ const ButtonsFilter = ({ initialState, selected, setSelected }: ButtonFilter) =>
 
          <Badge
             color="secondary"
-            badgeContent={initialState.filter((todo) => todo.status === "unCompleted").length}
+            badgeContent={todos.filter((todo) => todo.status === "unCompleted").length}
          >
             <Button
                sx={{
